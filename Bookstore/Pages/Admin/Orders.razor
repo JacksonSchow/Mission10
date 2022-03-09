@@ -1,0 +1,75 @@
+﻿@page "/admin/orders"
+@inherits OwningComponentBase<IOrderRepository>
+
+@*Orders page shows which orders have been shipped and which have not been shipped. Included is a bootstrap accordian that displays each table within a card*@
+
+<div class="accordion" id="accordionExample">
+    <div class="card">
+        <div class="card-header" id="headingOne">
+            <h2 class="mb-0">
+                <button class="btn btn-link btn-block text-left" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true"
+                        aria-controls="collapseOne" style="text-decoration:none;font-weight:bold;color:black;">
+                    Unshipped Orders
+                </button>
+            </h2>
+        </div>
+
+        <div id="collapseOne" class="collapse show" aria-labelledby="headingOne">
+            <div class="card-body">
+                <OrderTable TableTitle="Unshipped Orders" Orders="UncompletedOrders" ButtonLabel="Shipped" OrderSelected="CompleteOrder"></OrderTable>
+            </div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header" id="headingTwo">
+            <h2 class="mb-0">
+                <button class="btn btn-link btn-block text-left collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo"
+                        aria-expanded="false" aria-controls="collapseTwo" style="text-decoration:none;font-weight:bold;color:black;">
+                    Shipped Orders
+                </button>
+            </h2>
+        </div>
+        <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
+            <div class="card-body">
+                <OrderTable TableTitle="Shipped Orders" Orders="CompletedOrders" ButtonLabel="Reset" OrderSelected="ResetOrder"></OrderTable>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br />        
+
+<button class="btn btn-info" @onclick="@(x => UpdateData())">Refresh Data</button>
+
+@code {
+
+    public IOrderRepository repo => Service;
+
+    public IEnumerable<Order> AllOrders { get; set; }
+    public IEnumerable<Order> UncompletedOrders { get; set; }
+    public IEnumerable<Order> CompletedOrders { get; set; }
+
+    protected async override Task OnInitializedAsync()
+    {
+        await UpdateData();
+    }
+
+    public async Task UpdateData()
+    {
+        AllOrders = await repo.Orders.ToListAsync();
+        UncompletedOrders = AllOrders.Where(x => !x.OrderReceived);
+        CompletedOrders = AllOrders.Where(x => x.OrderReceived);
+    }
+
+    public void CompleteOrder(int id) => UpdateOrder(id, true);
+
+    public void ResetOrder(int id) => UpdateOrder(id, false);
+
+    private void UpdateOrder(int id, bool completed)
+    {
+        Order o = repo.Orders.FirstOrDefault(x => x.OrderId == id);
+        o.OrderReceived = completed;
+        repo.SaveOrder(o);
+    }
+
+}
